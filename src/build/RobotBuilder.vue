@@ -1,40 +1,52 @@
 <template>
   <div class="content">
-    <button class="add-to-card" @click="addToCard()">Add to Cart</button>
-    <div class="top-row">
-      <div class="top part" :style="[headBorderStyle]">
-        <div class="robot-name">
-          {{selectedRobot.head.title}}
-          <span v-show="selectedRobot.head.onSale" class="sale">Sale!</span>
+    <div class="preview">
+      <CollapsibleSection>
+        <div class="preview-content">
+          <div class="top-row">
+            <img :src="selectedRobot.head.src"/>
+          </div>
+          <div class="middle-row">
+            <img :src="selectedRobot.leftArm.src" class="rotate-left"/>
+            <img :src="selectedRobot.torso.src"/>
+            <img :src="selectedRobot.rightArm.src" class="rotate-right"/>
+          </div>
+          <div class="bottom-row">
+            <img :src="selectedRobot.base.src"/>
+          </div>
         </div>
-        <img v-bind:src="selectedRobot.head.src" title="head"/>
-        <button v-on:click="selectNextHead()" class="prev-selector">&#9668;</button>
-        <button v-on:click="selectPreviousHead()" class="next-selector">&#9658;</button>
-      </div>
+      </CollapsibleSection>
+      <button class="add-to-card" @click="addToCard()">Add to Cart</button>
+    </div>
+    <div class="top-row">
+      <!--<div class="robot-name">-->
+        <!--{{selectedRobot.head.title}}-->
+        <!--<span v-show="selectedRobot.head.onSale" class="sale">Sale!</span>-->
+      <!--</div>-->
+      <PartSelector
+        :parts="availableParts.heads"
+        position="top"
+        @partSelected="part => selectedRobot.head=part"/>
     </div>
     <div class="middle-row">
-      <div class="left part">
-        <img v-bind:src="selectedRobot.leftArm.src" title="left arm"/>
-        <button v-on:click="selectNextLeftArm()" class="prev-selector">&#9650;</button>
-        <button v-on:click="selectPreviousLeftArm()" class="next-selector">&#9660;</button>
-      </div>
-      <div class="center part">
-        <img v-bind:src="selectedRobot.torso.src" title="left arm"/>
-        <button v-on:click="selectNextTorso()" class="prev-selector">&#9668;</button>
-        <button v-on:click="selectPrevious()" class="next-selector">&#9658;</button>
-      </div>
-      <div class="right part">
-        <img v-bind:src="selectedRobot.rightArm.src" title="left arm"/>
-        <button v-on:click="selectNextRightArm()" class="prev-selector">&#9650;</button>
-        <button v-on:click="selectPreviousRightArm()" class="next-selector">&#9660;</button>
-      </div>
+      <PartSelector
+        :parts="availableParts.arms"
+        position="left"
+        @partSelected="part => selectedRobot.leftArm=part"/>
+      <PartSelector
+        :parts="availableParts.torsos"
+        position="center"
+        @partSelected="part => selectedRobot.torso=part"/>
+      <PartSelector
+        :parts="availableParts.arms"
+        position="right"
+        @partSelected="part => selectedRobot.rightArm=part"/>
     </div>
     <div class="bottom-row">
-      <div class="bottom part">
-        <img v-bind:src="selectedRobot.base.src" title="left arm"/>
-        <button v-on:click="selectedNextBase()" class="prev-selector">&#9668;</button>
-        <button v-on:click="selectPreviousBase()" class="next-selector">&#9658;</button>
-      </div>
+      <PartSelector
+        :parts="availableParts.bases"
+        position="bottom"
+        @partSelected="part => selectedRobot.base=part"/>
     </div>
     <div>
       <h1>Card</h1>
@@ -59,28 +71,24 @@
 <script>
 import availableParts from '../data/parts';
 import createdHookMixin from './created-hook-mixin';
-
-function getPreviousValidIndex(index, length) {
-  const deprecatedIndex = index - 1;
-  return deprecatedIndex < 0 ? length - 1 : deprecatedIndex;
-}
-
-function getNextValidIndex(index, length) {
-  const incrementedIndex = index + 1;
-  return incrementedIndex > length - 1 ? 0 : incrementedIndex;
-}
+import PartSelector from './PartSelector';
+import CollapsibleSection from '../shared/CollapsibleSection';
 
 export default {
   name: 'RobotBuilder',
+  components:
+    { PartSelector, CollapsibleSection },
   data() {
     return {
       availableParts,
       cart: [],
-      selectedHeadIndex: 0,
-      selectedLeftArmIndex: 0,
-      selectedRightArmIndex: 0,
-      selectedTorsoIndex: 0,
-      selectedLegsIndex: 0,
+      selectedRobot: {
+        head: {},
+        leftArm: {},
+        rightArm: {},
+        torso: {},
+        base: {},
+      },
     };
   },
   mixins: [createdHookMixin],
@@ -89,15 +97,6 @@ export default {
       return {
         border: this.selectedRobot.head.onSale
           ? '3px solid red' : '3px solid #aaa',
-      };
-    },
-    selectedRobot() {
-      return {
-        head: availableParts.heads[this.selectedHeadIndex],
-        leftArm: availableParts.arms[this.selectedLeftArmIndex],
-        rightArm: availableParts.arms[this.selectedRightArmIndex],
-        torso: availableParts.torsos[this.selectedTorsoIndex],
-        base: availableParts.bases[this.selectedLegsIndex],
       };
     },
   },
@@ -110,66 +109,6 @@ export default {
         + robot.torso.cost
         + robot.base.cost;
       this.cart.push(Object.assign({}, robot, { cost }));
-    },
-
-    selectNextHead() {
-      this.selectedHeadIndex = getNextValidIndex(this.selectedHeadIndex,
-        availableParts.heads.length);
-      this.selectedHeadIndex += 1;
-    },
-
-    selectPreviousHead() {
-      this.selectedHeadIndex = getPreviousValidIndex(this.selectedHeadIndex,
-        availableParts.heads.length);
-      this.selectedHeadIndex -= 1;
-    },
-
-    selectNextLeftArm() {
-      this.selectedLeftArmIndex = getNextValidIndex(this.selectedLeftArmIndex,
-        availableParts.arms.length);
-      this.selectedLeftArmIndex += 1;
-    },
-
-    selectPreviousLeftArm() {
-      this.selectedLeftArmIndex = getPreviousValidIndex(this.selectedLeftArmIndex,
-        availableParts.arms.length);
-      this.selectedLeftArmIndex -= 1;
-    },
-
-    selectNextRightArm() {
-      this.selectedRightArmIndex = getNextValidIndex(this.selectedRightArmIndex,
-        availableParts.arms.length);
-      this.selectedRightArmIndex += 1;
-    },
-
-    selectPreviousRightArm() {
-      this.selectedRightArmIndex = getPreviousValidIndex(this.selectedRightArmIndex,
-        availableParts.arms.length);
-      this.selectedRightArmIndex -= 1;
-    },
-
-    selectNextTorso() {
-      this.selectedTorsoIndex = getNextValidIndex(this.selectedTorsoIndex,
-        availableParts.torsos.length);
-      this.selectedTorsoIndex += 1;
-    },
-
-    selectedNextBase() {
-      this.selectedLegsIndex = getNextValidIndex(this.selectedLegsIndex,
-        availableParts.bases.length);
-      this.selectedLegsIndex += 1;
-    },
-
-    selectPrevious() {
-      this.selectedTorsoIndex = getPreviousValidIndex(this.selectedTorsoIndex,
-        availableParts.torsos.length);
-      this.selectedTorsoIndex -= 1;
-    },
-
-    selectPreviousBase() {
-      this.selectedLegsIndex = getPreviousValidIndex(this.selectedLegsIndex,
-        availableParts.bases.length);
-      this.selectedLegsIndex -= 1;
     },
   },
 };
@@ -284,8 +223,7 @@ export default {
 
 .add-to-card {
   position: absolute;
-  right: 30px;
-  width: 220px;
+  width: 210px;
   padding: 3px;
   font-size: 16px;
 }
@@ -296,5 +234,27 @@ td, th {
 }
 .cost {
   text-align: right;
+}
+
+.preview {
+  position: absolute;
+  top: -20px;
+  right: 0;
+  width: 210px;
+  height: 210px;
+  padding: 5px;
+}
+.preview-content {
+  border: 1px solid #999;
+}
+.preview img {
+  width: 50px;
+  height: 50px;
+}
+.rotate-right {
+  transform: rotate(90deg);
+}
+.rotate-left {
+  transform: rotate(-90deg);
 }
 </style>
