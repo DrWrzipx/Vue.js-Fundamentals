@@ -76,11 +76,20 @@ import CollapsibleSection from '../shared/CollapsibleSection';
 
 export default {
   name: 'RobotBuilder',
+  beforeRouteLeave(to, from, next) {
+    if(this.addedToCard) {
+      next(true);
+    } else {
+      const response = confirm('You have not added your robot to your cart, are you sure you want to leave?');
+      next(response);
+    }
+  },
   components:
     { PartSelector, CollapsibleSection },
   data() {
     return {
       availableParts,
+      addedToCard: false,
       cart: [],
       selectedRobot: {
         head: {},
@@ -109,6 +118,7 @@ export default {
         + robot.torso.cost
         + robot.base.cost;
       this.cart.push(Object.assign({}, robot, { cost }));
+      this.addedToCard = true;
     },
   },
 };
